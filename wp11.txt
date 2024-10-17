@@ -1,0 +1,157 @@
+Ex.No: 11.Write a web application that functions as a simple hand calculator, but also keeps a "paper trail" of all your previous work
+
+Here’s a step-by-step guide for creating a JSP-based web application that functions as a simple hand calculator with a "paper trail" feature. The calculator will display the results of each operation and keep a record of all previous calculations.
+
+Project Structure
+CalculatorApp/
+│
+├── WebContent/--------------------------------------------|classes/
+│   ├── index.jsp     # Main calculator interface                 |------CalculationServlet      #class file
+│   ├── result.jsp    # Displays result and paper trail
+│   └── WEB-INF/
+│       └── web.xml   # Configuration file
+│
+└── src/
+    └── CalculationServlet.java  # Servlet to handle the logic
+________________________________________________________________________________________________________________________________________________________________________________
+Step 1: Create web.xml (Web Descriptor)
+In WEB-INF/web.xml, configure the servlet and JSP mappings.
+
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="3.1">
+    <servlet>
+        <servlet-name>CalculationServlet</servlet-name>
+        <servlet-class>CalculationServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CalculationServlet</servlet-name>
+        <url-pattern>/calculate</url-pattern>
+    </servlet-mapping>
+</web-app>
+
+________________________________________________________________________________________________________________________________________________________________________________
+
+Step 2: Create the Calculator Form (index.jsp)
+This is the interface where users enter numbers and choose operations.
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Calculator</title>
+</head>
+<body>
+    <h1>Simple Calculator</h1>
+    <form action="calculate" method="post">
+        <input type="number" name="num1" step="any" required /> 
+        <select name="operation">
+            <option value="add">+</option>
+            <option value="subtract">-</option>
+            <option value="multiply">*</option>
+            <option value="divide">/</option>
+        </select>
+        <input type="number" name="num2" step="any" required />
+        <button type="submit">Calculate</button>
+    </form>
+</body>
+</html>
+________________________________________________________________________________________________________________________________________________________________________________
+Step 3: Create the Calculation Servlet (CalculationServlet.java)
+This servlet processes the request, performs the operation, and forwards the result to result.jsp.
+
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import java.io.IOException;
+import java.util.ArrayList;
+
+public class CalculationServlet extends HttpServlet {
+    private ArrayList<String> paperTrail = new ArrayList<>();
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        double num1 = Double.parseDouble(request.getParameter("num1"));
+        double num2 = Double.parseDouble(request.getParameter("num2"));
+        String operation = request.getParameter("operation");
+
+        double result = 0;
+        String opSymbol = "";
+
+        switch (operation) {
+            case "add":
+                result = num1 + num2;
+                opSymbol = "+";
+                break;
+            case "subtract":
+                result = num1 - num2;
+                opSymbol = "-";
+                break;
+            case "multiply":
+                result = num1 * num2;
+                opSymbol = "*";
+                break;
+            case "divide":
+                if (num2 != 0) {
+                    result = num1 / num2;
+                } else {
+                    request.setAttribute("error", "Cannot divide by zero.");
+                    request.getRequestDispatcher("result.jsp").forward(request, response);
+                    return;
+                }
+                opSymbol = "/";
+                break;
+        }
+
+        String calculation = num1 + " " + opSymbol + " " + num2 + " = " + result;
+        paperTrail.add(calculation);
+
+        request.setAttribute("result", result);
+        request.setAttribute("paperTrail", paperTrail);
+        request.getRequestDispatcher("result.jsp").forward(request, response);
+    }
+}
+________________________________________________________________________________________________________________________________________________________________________________
+Step 4: Create the Result Page (result.jsp)
+This page displays the result of the current operation and the entire paper trail.
+
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ page import="java.util.ArrayList" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calculation Result</title>
+</head>
+<body>
+    <h1>Result</h1>
+    <p>
+        <% 
+            if (request.getAttribute("error") != null) {
+                out.println(request.getAttribute("error"));
+            } else {
+                out.println("Result: " + request.getAttribute("result"));
+            }
+        %>
+    </p>
+
+    <h2>Paper Trail</h2>
+    <ul>
+        <% 
+            ArrayList<String> paperTrail = (ArrayList<String>) request.getAttribute("paperTrail");
+            for (String calculation : paperTrail) {
+                out.println("<li>" + calculation + "</li>");
+            }
+        %>
+    </ul>
+
+    <a href="index.jsp">Perform another calculation</a>
+</body>
+</html>
+________________________________________________________________________________________________________________________________________________________________________________
+Step 5: Compile and Run the Application
+1.	Compile the servlet: Ensure your Java servlet is compiled and placed in the WEB-INF/classes directory or properly deployed in your server.
+2.	Deploy on Tomcat or any compatible server:
+o	Copy the project folder (CalculatorApp) to the webapps directory of the server.
+o	Start the server and navigate to:
+http://localhost:8080/CalculatorApp/index.jsp
+________________________________________________________________________________________________________________________________________________________________________________
+Summary
+This simple calculator web application allows users to perform basic operations (add, subtract, multiply, divide) and displays the results along with a paper trail of all previous calculations. The CalculationServlet handles the processing, while the results and history are shown on result.jsp.
+
+
